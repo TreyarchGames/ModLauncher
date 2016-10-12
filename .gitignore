@@ -2,6 +2,7 @@ GeneratedFiles
 ipch
 x64
 *.sdf
+*.opensdf
 *.suo
 *.HavokScriptPlugin
 *.user

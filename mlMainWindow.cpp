@@ -375,7 +375,10 @@ void mlMainWindow::ContextMenuRequested(const QPoint& Point)
 	Menu->addAction("Show Zone Folder", this, SLOT(OnOpenZoneFolder()));
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
-		Menu->addAction("Open Map in Radiant", this, SLOT(OnFileLevelEditor()));
+	{
+		QIcon RadiantIcon("resources/Radiant.png");
+		Menu->addAction(RadiantIcon, "Open Map in Radiant", this, SLOT(OnFileLevelEditor()));
+	}
 
 	Menu->addSeparator();
 	Menu->addAction("Delete", this, SLOT(OnDelete()));
@@ -876,6 +879,12 @@ void mlMainWindow::OnEditOptions()
 
 	QVBoxLayout* Layout = new QVBoxLayout(&Dialog);
 
+	QSettings settings;
+	QCheckBox* Checkbox = new QCheckBox("Use Treyarch Theme");
+	Checkbox->setToolTip("Toggle between the dark grey Treyarch colors and the default Windows colors");
+	Checkbox->setChecked(settings.value("UseDarkTheme", false).toBool());
+	Layout->addWidget(Checkbox);
+
 	QTreeWidget* LanguageTree = new QTreeWidget(&Dialog);
 	LanguageTree->setHeaderHidden(true);
 	LanguageTree->setUniformRowHeights(true);
@@ -913,6 +922,30 @@ void mlMainWindow::OnEditOptions()
 
 	if (mBuildLanguages.empty())
 		mBuildLanguages.append("english");
+
+	settings.setValue("UseDarkTheme", Checkbox->isChecked());
+	if (Checkbox->isChecked())
+	{
+		QString ToolsPath = getenv("TA_TOOLS_PATH");
+		QString StyleSheetPath = QString("%1\\radiant\\stylesheet.qss").arg(ToolsPath);
+
+		QFile f(StyleSheetPath);
+		if (!f.exists())
+		{
+			printf("ERROR: Unable to set stylesheet - file not found\n");
+		}
+		else
+		{
+			f.open(QFile::ReadOnly | QFile::Text);
+			QTextStream ts(&f);
+			qApp->setStyleSheet(ts.readAll());
+			f.close();
+		}
+	}
+	else
+	{
+		qApp->setStyleSheet("");
+	}
 }
 
 void mlMainWindow::UpdateWorkshopItem()
