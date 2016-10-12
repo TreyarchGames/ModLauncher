@@ -6,5 +6,8 @@
         <file>resources/Go.png</file>
         <file>resources/FileNew.png</file>
         <file>resources/upload.png</file>
+        <file>stylesheet/stylesheet/checkbox.png</file>
+        <file>stylesheet/stylesheet/down_arrow.png</file>
+        <file>stylesheet/stylesheet/handle.png</file>
     </qresource>
 </RCC>

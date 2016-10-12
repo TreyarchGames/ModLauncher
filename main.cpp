@@ -28,6 +28,26 @@ int main(int argc, char *argv[])
 	QCoreApplication::setApplicationName("ModLauncher");
 //	QCoreApplication::setApplicationVersion();
 
+	QSettings settings;
+	if (settings.value("UseDarkTheme", false).toBool() == true)
+	{
+		QString ToolsPath = getenv("TA_TOOLS_PATH");
+		QString StyleSheetPath = QString("%1\\radiant\\stylesheet.qss").arg(ToolsPath);
+
+		QFile f(StyleSheetPath);
+		if (!f.exists())
+		{
+			printf("ERROR: Unable to set stylesheet - file not found\n");
+		}
+		else
+		{
+			f.open(QFile::ReadOnly | QFile::Text);
+			QTextStream ts(&f);
+			qApp->setStyleSheet(ts.readAll());
+			f.close();
+		}
+	}
+
 	mlMainWindow MainWindow;
 	MainWindow.UpdateDB();
 	MainWindow.show();
