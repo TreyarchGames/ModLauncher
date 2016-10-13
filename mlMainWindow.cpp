@@ -376,7 +376,7 @@ void mlMainWindow::ContextMenuRequested(const QPoint& Point)
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
-		QIcon RadiantIcon("resources/Radiant.png");
+		QIcon RadiantIcon(":/resources/Radiant.png");
 		Menu->addAction(RadiantIcon, "Open Map in Radiant", this, SLOT(OnFileLevelEditor()));
 	}
 
