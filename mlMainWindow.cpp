@@ -142,6 +142,7 @@ mlMainWindow::mlMainWindow()
 	mLightQualityWidget = new QComboBox();
 	mLightQualityWidget->addItems(QStringList() << "Low" << "Medium" << "High");
 	mLightQualityWidget->setCurrentIndex(1);
+	mLightQualityWidget->setMinimumWidth(64); // Fix for "Medium" being cut off in the dark theme
 	LightLayout->addWidget(mLightQualityWidget);
 
 	mLinkEnabledWidget = new QCheckBox("Link");
