@@ -375,9 +375,9 @@ void mlMainWindow::ContextMenuRequested(const QPoint& Point)
 		return;
 
 	QMenu* Menu = new QMenu;
-
 	Menu->addAction("Edit Zone File", this, SLOT(OnOpenZoneFile()));
-	Menu->addAction("Show Zone Folder", this, SLOT(OnOpenZoneFolder()));
+	//Menu->addAction("Show Zone Source Folder", this, SLOT(OnOpenZoneFolder())); // is this really needed? Accessing root is better than zone_source itself
+	Menu->addAction(QString("Open %1 folder").arg((Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP) ? "Map" : "Mod"), this, SLOT(OnOpenModRootFolder()));
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
@@ -1093,6 +1093,27 @@ void mlMainWindow::OnOpenZoneFolder()
 	{
 		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
 		ShellExecute(NULL, "open", (QString("\"%1/mods/%2/zone_source/\"").arg(GamePath, ModName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+	}
+}
+
+void mlMainWindow::OnOpenModRootFolder()
+{
+	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
+	if (ItemList.isEmpty())
+		return;
+
+	QString GamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
+	QTreeWidgetItem* Item = ItemList[0];
+
+	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
+	{
+		QString MapName = Item->text(0);
+		ShellExecute(NULL, "open", (QString("\"%1/usermaps/%2\"").arg(GamePath, MapName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+	}
+	else
+	{
+		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
+		ShellExecute(NULL, "open", (QString("\"%1/mods/%2\"").arg(GamePath, ModName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 }
 
