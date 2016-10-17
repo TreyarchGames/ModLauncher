@@ -87,6 +87,7 @@ protected:
 	void PopulateFileList();
 	void UpdateWorkshopItem();
 	void ShowPublishDialog();
+	void UpdateTheme();
 
 	void CreateActions();
 	void CreateMenu();
@@ -116,7 +117,9 @@ protected:
 
 	mlBuildThread* mBuildThread;
 
-	QStringList mBuildLanguages;
+	bool mTreyarchTheme;
+	QString mBuildLanguage;
+
 	QStringList mShippedMapList;
 	QTimer mTimer;
 
