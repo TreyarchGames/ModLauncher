@@ -84,8 +84,13 @@ void mlBuildThread::run()
 
 mlMainWindow::mlMainWindow()
 {
+	QSettings Settings;
+
 	mBuildThread = NULL;
-	mBuildLanguages.append("english");
+	mBuildLanguage = Settings.value("BuildLanguage", "english").toString();
+	mTreyarchTheme = Settings.value("UseDarkTheme", false).toBool();
+
+	UpdateTheme();
 
 	setWindowIcon(QIcon(":/resources/ModLauncher.png"));
 	setWindowTitle("Black Ops III Mod Tools Launcher");
@@ -170,7 +175,6 @@ mlMainWindow::mlMainWindow()
 		mShippedMapList = shippedMapStr.split(',');
 	}
 
-	QSettings Settings;
 	Settings.beginGroup("MainWindow");
 	resize(QSize(800, 600));
 	move(QPoint(200, 200));
@@ -576,7 +580,11 @@ void mlMainWindow::OnEditBuild()
 	QString LastMap, LastMod;
 
 	QStringList LanguageArgs;
-	for (const QString& Language : mBuildLanguages)
+	LanguageArgs;
+
+	if (mBuildLanguage != "All")
+		LanguageArgs << "-language" << mBuildLanguage;
+	else for (const QString& Language : gLanguages)
 		LanguageArgs << "-language" << Language;
 
 	for (QTreeWidgetItem* Item : CheckedItems)
@@ -879,24 +887,26 @@ void mlMainWindow::OnEditOptions()
 
 	QVBoxLayout* Layout = new QVBoxLayout(&Dialog);
 
-	QSettings settings;
+	QSettings Settings;
 	QCheckBox* Checkbox = new QCheckBox("Use Treyarch Theme");
 	Checkbox->setToolTip("Toggle between the dark grey Treyarch colors and the default Windows colors");
-	Checkbox->setChecked(settings.value("UseDarkTheme", false).toBool());
+	Checkbox->setChecked(Settings.value("UseDarkTheme", false).toBool());
 	Layout->addWidget(Checkbox);
 
-	QTreeWidget* LanguageTree = new QTreeWidget(&Dialog);
-	LanguageTree->setHeaderHidden(true);
-	LanguageTree->setUniformRowHeights(true);
-	LanguageTree->setRootIsDecorated(false);
-	Layout->addWidget(LanguageTree);
+	QHBoxLayout* LanguageLayout = new QHBoxLayout();
+	LanguageLayout->addWidget(new QLabel("Build Language:"));
 
+	QStringList Languages;
+	Languages << "All";
 	for (int LanguageIdx = 0; LanguageIdx < ARRAYSIZE(gLanguages); LanguageIdx++)
-	{
-		const char* Language = gLanguages[LanguageIdx];
-		QTreeWidgetItem* Item = new QTreeWidgetItem(LanguageTree, QStringList() << Language);
-		Item->setCheckState(0, mBuildLanguages.contains(Language) ? Qt::Checked : Qt::Unchecked);
-	}
+		Languages << gLanguages[LanguageIdx];
+
+	QComboBox* LanguageCombo = new QComboBox();
+	LanguageCombo->addItems(Languages);
+	LanguageCombo->setCurrentText(mBuildLanguage);
+	LanguageLayout->addWidget(LanguageCombo);
+
+	Layout->addLayout(LanguageLayout);
 
 	QDialogButtonBox* ButtonBox = new QDialogButtonBox(&Dialog);
 	ButtonBox->setOrientation(Qt::Horizontal);
@@ -911,39 +921,29 @@ void mlMainWindow::OnEditOptions()
 	if (Dialog.exec() != QDialog::Accepted)
 		return;
 
-	mBuildLanguages.clear();
+	mBuildLanguage = LanguageCombo->currentText();
+	mTreyarchTheme = Checkbox->isChecked();
 
-	for (int ChildIdx = 0; ChildIdx < LanguageTree->topLevelItemCount(); ChildIdx++)
+	Settings.setValue("BuildLanguage", mBuildLanguage);
+	Settings.setValue("UseDarkTheme", mTreyarchTheme);
+
+	UpdateTheme();
+}
+
+void mlMainWindow::UpdateTheme()
+{
+	if (mTreyarchTheme)
 	{
-		QTreeWidgetItem* Child = LanguageTree->topLevelItem(ChildIdx);
-		if (Child->checkState(0) == Qt::Checked)
-			mBuildLanguages.append(Child->text(0));
-	}
-
-	if (mBuildLanguages.empty())
-		mBuildLanguages.append("english");
-
-	settings.setValue("UseDarkTheme", Checkbox->isChecked());
-	if (Checkbox->isChecked())
-	{
-		QString ToolsPath = getenv("TA_TOOLS_PATH");
-		QString StyleSheetPath = QString("%1\\radiant\\stylesheet.qss").arg(ToolsPath);
-
-		QFile f(StyleSheetPath);
-		if (!f.exists())
-		{
-			printf("ERROR: Unable to set stylesheet - file not found\n");
-		}
-		else
-		{
-			f.open(QFile::ReadOnly | QFile::Text);
-			QTextStream ts(&f);
-			qApp->setStyleSheet(ts.readAll());
-			f.close();
-		}
+		qApp->setStyle("plastique");
+		QFile file(QString("%1\\radiant\\stylesheet.qss").arg(getenv("TA_TOOLS_PATH")));
+		file.open(QFile::ReadOnly);
+		QString styleSheet = QLatin1String(file.readAll());
+		file.close();
+		qApp->setStyleSheet(styleSheet);
 	}
 	else
 	{
+		qApp->setStyle("WindowsVista");
 		qApp->setStyleSheet("");
 	}
 }
