@@ -209,8 +209,9 @@ void mlMainWindow::CreateActions()
 	mActionFileAssetEditor->setShortcut(QKeySequence("Ctrl+A"));
 	connect(mActionFileAssetEditor, SIGNAL(triggered()), this, SLOT(OnFileAssetEditor()));
 
-	mActionFileLevelEditor = new QAction(QIcon(":/resources/Radiant.png"), "&Level Editor", this);
+	mActionFileLevelEditor = new QAction(QIcon(":/resources/Radiant.png"), "Open in &Radiant", this);
 	mActionFileLevelEditor->setShortcut(QKeySequence("Ctrl+R"));
+	mActionFileLevelEditor->setToolTip("Level Editor");
 	connect(mActionFileLevelEditor, SIGNAL(triggered()), this, SLOT(OnFileLevelEditor()));
 
 	mActionFileExit = new QAction("E&xit", this);
@@ -382,13 +383,9 @@ void mlMainWindow::ContextMenuRequested(const QPoint& Point)
 	Menu->addAction(GameIcon, QString("Run %1").arg(ItemType), this, SLOT(OnRunMapOrMod()));
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
-	{
-		QIcon RadiantIcon(":/resources/Radiant.png");
-		Menu->addAction(RadiantIcon, "Open Map in Radiant", this, SLOT(OnFileLevelEditor()));
-	}
+		Menu->addAction(mActionFileLevelEditor);
 
 	Menu->addAction("Edit Zone File", this, SLOT(OnOpenZoneFile()));
-	//Menu->addAction("Show Zone Source Folder", this, SLOT(OnOpenZoneFolder())); // is this really needed? Accessing root is better than zone_source itself
 	Menu->addAction(QString("Open %1 Folder").arg(ItemType), this, SLOT(OnOpenModRootFolder()));
 
 	Menu->addSeparator();
@@ -1074,26 +1071,6 @@ void mlMainWindow::OnOpenZoneFile()
 		QString ModName = Item->parent()->text(0);
 		QString ZoneName = Item->text(0);
 		ShellExecute(NULL, "open", (QString("\"%1/mods/%2/zone_source/%3.zone\"").arg(mGamePath, ModName, ZoneName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
-	}
-}
-
-void mlMainWindow::OnOpenZoneFolder()
-{
-	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
-	if (ItemList.isEmpty())
-		return;
-
-	QTreeWidgetItem* Item = ItemList[0];
-
-	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
-	{
-		QString MapName = Item->text(0);
-		ShellExecute(NULL, "open", (QString("\"%1/usermaps/%2/zone_source/\"").arg(mGamePath, MapName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
-	}
-	else
-	{
-		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
-		ShellExecute(NULL, "open", (QString("\"%1/mods/%2/zone_source/\"").arg(mGamePath, ModName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 }
 

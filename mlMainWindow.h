@@ -73,7 +73,6 @@ protected slots:
 	void OnEditOptions();
 	void OnHelpAbout();
 	void OnOpenZoneFile();
-	void OnOpenZoneFolder();
 	void OnOpenModRootFolder();
 	void OnRunMapOrMod();
 	void OnDelete();
