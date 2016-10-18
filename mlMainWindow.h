@@ -133,4 +133,7 @@ protected:
 	QString mFolderName;
 	QString mType;
 	QStringList mTags;
+
+	QString mGamePath;
+	QString mToolsPath;
 };
