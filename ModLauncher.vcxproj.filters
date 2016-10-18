@@ -26,6 +26,9 @@
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Generated Files\External_Release">
+      <UniqueIdentifier>{5fc30545-a821-4000-9780-d6dd6c4d03ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -45,6 +48,9 @@
     </ClCompile>
     <ClCompile Include="GeneratedFiles\qrc_resources.cpp">
       <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\External_Release\moc_mlMainWindow.cpp">
+      <Filter>Generated Files\External_Release</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
