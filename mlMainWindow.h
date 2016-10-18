@@ -75,6 +75,7 @@ protected slots:
 	void OnOpenZoneFile();
 	void OnOpenZoneFolder();
 	void OnOpenModRootFolder();
+	void OnRunMapOrMod();
 	void OnDelete();
 	void BuildOutputReady(QString Output);
 	void BuildFinished();

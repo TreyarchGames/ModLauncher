@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>resources/AssetEditor.png</file>
+        <file>resources/BlackOps3.png</file>
         <file>resources/Radiant.png</file>
         <file>resources/ModLauncher.png</file>
         <file>resources/Go.png</file>
