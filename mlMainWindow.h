@@ -74,6 +74,8 @@ protected slots:
 	void OnHelpAbout();
 	void OnOpenZoneFile();
 	void OnOpenZoneFolder();
+	void OnOpenModRootFolder();
+	void OnRunMapOrMod();
 	void OnDelete();
 	void BuildOutputReady(QString Output);
 	void BuildFinished();
@@ -131,4 +133,7 @@ protected:
 	QString mFolderName;
 	QString mType;
 	QStringList mTags;
+
+	QString mGamePath;
+	QString mToolsPath;
 };

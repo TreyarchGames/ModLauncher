@@ -22,3 +22,6 @@
 #include "steam_api.h"
 
 class mlMainWindow;
+
+// States whether or not a custom version of Qt is being used (automatically determine's which libraries to link in stdafx.cpp)
+#define USE_CUSTOM_QT 0
