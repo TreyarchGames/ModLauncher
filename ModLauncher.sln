@@ -6,14 +6,14 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
-		Release External|x64 = Release External|x64
+		External_Release|x64 = External_Release|x64
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5703602A-18C8-4781-8435-404AEFCAFEAA}.Debug|x64.ActiveCfg = Debug|x64
 		{5703602A-18C8-4781-8435-404AEFCAFEAA}.Debug|x64.Build.0 = Debug|x64
-		{5703602A-18C8-4781-8435-404AEFCAFEAA}.Release External|x64.ActiveCfg = Release External|Win32
-		{5703602A-18C8-4781-8435-404AEFCAFEAA}.Release External|x64.Build.0 = Release External|x64
+		{5703602A-18C8-4781-8435-404AEFCAFEAA}.External_Release|x64.ActiveCfg = External_Release|x64
+		{5703602A-18C8-4781-8435-404AEFCAFEAA}.External_Release|x64.Build.0 = External_Release|x64
 		{5703602A-18C8-4781-8435-404AEFCAFEAA}.Release|x64.ActiveCfg = Release|x64
 		{5703602A-18C8-4781-8435-404AEFCAFEAA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
