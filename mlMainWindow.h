@@ -78,7 +78,7 @@ protected slots:
 	void OnDelete();
 	void BuildOutputReady(QString Output);
 	void BuildFinished();
-	void ContextMenuRequested(const QPoint& Point);
+	void ContextMenuRequested();
 	void SteamUpdate();
 
 protected:

@@ -121,7 +121,7 @@ mlMainWindow::mlMainWindow()
 	mFileListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 	TopLayout->addWidget(mFileListWidget);
 
-	connect(mFileListWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ContextMenuRequested(const QPoint&)));
+	connect(mFileListWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ContextMenuRequested()));
 
 	QVBoxLayout* ActionsLayout = new QVBoxLayout();
 	TopLayout->addLayout(ActionsLayout);
@@ -365,7 +365,7 @@ void mlMainWindow::PopulateFileList()
 	mFileListWidget->expandAll();
 }
 
-void mlMainWindow::ContextMenuRequested(const QPoint& Point)
+void mlMainWindow::ContextMenuRequested()
 {
 	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
 	if (ItemList.isEmpty())
