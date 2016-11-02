@@ -97,6 +97,7 @@ protected:
 	QAction* mActionFileNew;
 	QAction* mActionFileAssetEditor;
 	QAction* mActionFileLevelEditor;
+	QAction* mActionFileExport2Bin;
 	QAction* mActionFileExit;
 	QAction* mActionEditBuild;
 	QAction* mActionEditPublish;

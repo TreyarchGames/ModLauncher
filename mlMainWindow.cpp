@@ -214,6 +214,10 @@ void mlMainWindow::CreateActions()
 	mActionFileLevelEditor->setToolTip("Level Editor");
 	connect(mActionFileLevelEditor, SIGNAL(triggered()), this, SLOT(OnFileLevelEditor()));
 
+	mActionFileExport2Bin = new QAction(QIcon(":/resources/Export2Bin.png"), "&Export2Bin GUI", this);
+	mActionFileExport2Bin->setShortcut(QKeySequence("Ctrl+E"));
+	connect(mActionFileExport2Bin, SIGNAL(triggered()), this, SLOT(OnFileAssetEditor()));
+
 	mActionFileExit = new QAction("E&xit", this);
 	connect(mActionFileExit, SIGNAL(triggered()), this, SLOT(close()));
 
@@ -241,6 +245,7 @@ void mlMainWindow::CreateMenu()
 	FileMenu->addSeparator();
 	FileMenu->addAction(mActionFileAssetEditor);
 	FileMenu->addAction(mActionFileLevelEditor);
+	FileMenu->addAction(mActionFileExport2Bin);
 	FileMenu->addSeparator();
 	FileMenu->addAction(mActionFileExit);
 	MenuBar->addAction(FileMenu->menuAction());
@@ -270,6 +275,7 @@ void mlMainWindow::CreateToolBar()
 	ToolBar->addSeparator();
 	ToolBar->addAction(mActionFileAssetEditor);
 	ToolBar->addAction(mActionFileLevelEditor);
+	ToolBar->addAction(mActionFileExport2Bin);
 
 	addToolBar(Qt::TopToolBarArea, ToolBar);
 }
