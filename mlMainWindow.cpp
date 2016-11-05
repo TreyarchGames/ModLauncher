@@ -163,6 +163,10 @@ mlMainWindow::mlMainWindow()
 	connect(mBuildButton, SIGNAL(clicked()), mActionEditBuild, SLOT(trigger()));
 	ActionsLayout->addWidget(mBuildButton);
 
+	mDvarsButton = new QPushButton("Dvars");
+	connect(mDvarsButton, SIGNAL(clicked()), this, SLOT(OnEditDvars()));
+	ActionsLayout->addWidget(mDvarsButton);
+
 	mIgnoreErrorsWidget = new QCheckBox("Ignore Errors");
 	ActionsLayout->addWidget(mIgnoreErrorsWidget);
 
@@ -225,7 +229,7 @@ void mlMainWindow::CreateActions()
 	mActionEditPublish->setShortcut(QKeySequence("Ctrl+P"));
 	connect(mActionEditPublish, SIGNAL(triggered()), this, SLOT(OnEditPublish()));
 
-	mActionEditOptions = new QAction("Options...", this);
+	mActionEditOptions = new QAction("&Options...", this);
 	connect(mActionEditOptions, SIGNAL(triggered()), this, SLOT(OnEditOptions()));
 
 	mActionHelpAbout = new QAction("&About...", this);
@@ -668,6 +672,9 @@ void mlMainWindow::OnEditBuild()
 	{
 		QStringList Args;
 
+		if(!mRunDvars.toLatin1().isEmpty())
+			Args << mRunDvars;
+
 		Args << "+set" << "fs_game" << (LastMod.isEmpty() ? LastMap : LastMod);
 
 		if (!LastMap.isEmpty())
@@ -949,6 +956,80 @@ void mlMainWindow::UpdateTheme()
 	}
 }
 
+void mlMainWindow::OnEditDvars()
+{
+	dvar_s dvars[] = {
+						{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_INT, 0, 1}, //TODO: proper bool setup
+						{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
+						{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
+						{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_INT, 0, 1},
+						{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING}
+					 };
+
+	QDialog Dialog(this, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint);
+	Dialog.setWindowTitle("Dvar Options");
+
+	QVBoxLayout* Layout = new QVBoxLayout(&Dialog);
+
+	QLabel* Label = new QLabel(&Dialog);
+	Label->setText("Dvars that are to be used when you run the game.\nMust press \"OK\" in order to save the values!");
+	Layout->addWidget(Label);
+
+	QTreeWidget* DvarTree = new QTreeWidget(&Dialog);
+	DvarTree->setColumnCount(2);
+	DvarTree->setHeaderLabels(QStringList() << "Dvar" << "Value");
+	DvarTree->setUniformRowHeights(true);
+	DvarTree->setRootIsDecorated(false);
+	Layout->addWidget(DvarTree);
+
+	QDialogButtonBox* ButtonBox = new QDialogButtonBox(&Dialog);
+	ButtonBox->setOrientation(Qt::Horizontal);
+	ButtonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	ButtonBox->setCenterButtons(true);
+
+	Layout->addWidget(ButtonBox);
+
+	for(int DvarIdx = 0; DvarIdx < ARRAYSIZE(dvars); DvarIdx++)
+		Dvar(dvars[DvarIdx], DvarTree);
+
+	connect(ButtonBox, SIGNAL(accepted()), &Dialog, SLOT(accept()));
+	connect(ButtonBox, SIGNAL(rejected()), &Dialog, SLOT(reject()));
+
+	if (Dialog.exec() != QDialog::Accepted)
+		return;
+	// TODO: maybe look into cleaning this up.
+	QSettings settings;
+	QString dvarName, dvarValue;
+
+	QTreeWidgetItemIterator it(DvarTree);
+	int size = 0;
+	mRunDvars = "";
+	while (*it && size < ARRAYSIZE(dvars))
+	{
+		QWidget* widget = DvarTree->itemWidget(*it, 1);
+		QVariant w;
+		w = (*it)->data(0, 0);
+		dvarName = w.toString();
+		dvar_s dvar = Dvar::findDvar(dvarName, DvarTree, dvars, ARRAYSIZE(dvars));
+		switch(dvar.type)
+		{
+		case DVAR_VALUE_BOOL:
+			dvarValue = Dvar::setDvarSetting(dvar, (QCheckBox*)widget);
+			break;
+		case DVAR_VALUE_INT:
+			dvarValue = Dvar::setDvarSetting(dvar, (QSpinBox*)widget);
+			break;
+		case DVAR_VALUE_STRING:
+			dvarValue = Dvar::setDvarSetting(dvar, (QLineEdit*)widget);
+			break;
+		}
+		if(!dvarValue.toLatin1().isEmpty())
+			mRunDvars += " +set " + dvarName + " " + dvarValue;
+		size++;
+		++it;
+	}
+}
+
 void mlMainWindow::UpdateWorkshopItem()
 {
 	QJsonObject Root;
@@ -1116,6 +1197,9 @@ void mlMainWindow::OnRunMapOrMod()
 		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
 		Args << QString("\"%1/mods/%2\"").arg(mGamePath, ModName);
 	}
+
+	if(!mRunDvars.toLatin1().isEmpty())
+		Args << mRunDvars;
 
 	QList<QPair<QString, QStringList>> Commands;
 	Commands.append(QPair<QString, QStringList>(QString("%1\\BlackOps3.exe").arg(mGamePath), Args));

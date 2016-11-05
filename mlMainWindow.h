@@ -17,7 +17,7 @@
 */
 
 #pragma once
-
+#include "stdafx.h"
 class mlBuildThread : public QThread
 {
 	Q_OBJECT
@@ -71,6 +71,7 @@ protected slots:
 	void OnEditBuild();
 	void OnEditPublish();
 	void OnEditOptions();
+	void OnEditDvars();
 	void OnHelpAbout();
 	void OnOpenZoneFile();
 	void OnOpenModRootFolder();
@@ -107,6 +108,7 @@ protected:
 	QPlainTextEdit* mOutputWidget;
 
 	QPushButton* mBuildButton;
+	QPushButton* mDvarsButton;
 	QCheckBox* mCompileEnabledWidget;
 	QComboBox* mCompileModeWidget;
 	QCheckBox* mLightEnabledWidget;
@@ -135,4 +137,6 @@ protected:
 
 	QString mGamePath;
 	QString mToolsPath;
+
+	QString mRunDvars;
 };
