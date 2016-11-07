@@ -1193,22 +1193,27 @@ void mlMainWindow::OnRunMapOrMod()
 	QTreeWidgetItem* Item = ItemList[0];
 
 	QStringList Args;
+
+	if(!mRunDvars.isEmpty())
+		Args << mRunDvars;
+
 	Args << "+set" << "fs_game";
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
 		QString MapName = Item->text(0);
-		Args << QString("\"%1/usermaps/%2\"").arg(mGamePath, MapName);
+		Args << MapName;
 		Args << "+devmap" << MapName;
 	}
 	else
 	{
 		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
-		Args << QString("\"%1/mods/%2\"").arg(mGamePath, ModName);
+		Args << ModName;
 	}
 
-	if(!mRunDvars.isEmpty())
-		Args << mRunDvars;
+	QString ExtraOptions = mRunOptionsWidget->text();
+	if (!ExtraOptions.isEmpty())
+		Args << ExtraOptions.split(' ');
 
 	QList<QPair<QString, QStringList>> Commands;
 	Commands.append(QPair<QString, QStringList>(QString("%1\\BlackOps3.exe").arg(mGamePath), Args));
