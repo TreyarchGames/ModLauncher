@@ -179,12 +179,7 @@ mlMainWindow::mlMainWindow()
 
 	setCentralWidget(CentralWidget);
 
-	QFile File("shippedMaps.csv");
-	if (File.open(QIODevice::ReadOnly))
-	{
-		QString shippedMapStr = QString(File.readAll());
-		mShippedMapList = shippedMapStr.split(',');
-	}
+	mShippedMapList = { "mp_aerospace", "mp_apartments", "mp_arena", "mp_banzai", "mp_biodome", "mp_chinatown", "mp_city", "mp_conduit", "mp_crucible", "mp_cryogen", "mp_ethiopia", "mp_freerun_01", "mp_freerun_02", "mp_freerun_03", "mp_freerun_04", "mp_havoc", "mp_infection", "mp_kung_fu", "mp_metro", "mp_miniature", "mp_nuketown_x", "mp_redwood", "mp_rise", "mp_rome", "mp_ruins", "mp_sector", "mp_shrine", "mp_skyjacked", "mp_spire", "mp_stronghold", "mp_veiled", "mp_waterpark", "mp_western", "zm_castle", "zm_factory", "zm_genesis", "zm_island", "zm_levelcommon", "zm_stalingrad", "zm_zod" };
 
 	Settings.beginGroup("MainWindow");
 	resize(QSize(800, 600));
@@ -346,10 +341,10 @@ void mlMainWindow::PopulateFileList()
 	QStringList Mods = QDir(ModsFolder).entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
 	QTreeWidgetItem* ModsRootItem = new QTreeWidgetItem(mFileListWidget, QStringList() << "Mods");
 	ModsRootItem->setFont(0, Font);
+	const char* Files[4] = { "core_mod", "mp_mod", "cp_mod", "zm_mod" };
 
 	for (QString ModName : Mods)
 	{
-		const char* Files[4] = { "core_mod", "mp_mod", "cp_mod", "zm_mod" };
 		QTreeWidgetItem* ParentItem = NULL;
 
 		for (int FileIdx = 0; FileIdx < 4; FileIdx++)
@@ -999,19 +994,17 @@ void mlMainWindow::OnEditDvars()
 
 	if (Dialog.exec() != QDialog::Accepted)
 		return;
-	// TODO: maybe look into cleaning this up.
+
+	int size = 0;
 	QSettings settings;
 	QString dvarName, dvarValue;
-
 	QTreeWidgetItemIterator it(DvarTree);
-	int size = 0;
+
 	mRunDvars.clear();
 	while (*it && size < ARRAYSIZE(dvars))
 	{
 		QWidget* widget = DvarTree->itemWidget(*it, 1);
-		QVariant w;
-		w = (*it)->data(0, 0);
-		dvarName = w.toString();
+		dvarName = (*it)->data(0, 0).toString();
 		dvar_s dvar = Dvar::findDvar(dvarName, DvarTree, dvars, ARRAYSIZE(dvars));
 		switch(dvar.type)
 		{
@@ -1027,12 +1020,9 @@ void mlMainWindow::OnEditDvars()
 		}
 		if(!dvarValue.toLatin1().isEmpty())
 		{
-			// Don't use qstring for mRunDvars as this willl hapen if Steam tries to launch the game
-			// http://i.imgur.com/Pgn6ZkW.png
-			// TODO: hack for cmds
 			if(!dvar.isCmd)
 				mRunDvars << "+set" << dvarName;
-			else
+			else			// hack for cmds
 				mRunDvars << QString("+%1").arg(dvarName);
 			mRunDvars << dvarValue;
 		}
