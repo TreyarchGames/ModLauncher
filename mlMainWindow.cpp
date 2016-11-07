@@ -959,10 +959,10 @@ void mlMainWindow::UpdateTheme()
 void mlMainWindow::OnEditDvars()
 {
 	dvar_s dvars[] = {
-						{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_INT, 0, 1}, //TODO: proper bool setup
+						{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
 						{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
 						{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
-						{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_INT, 0, 1},
+						{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_BOOL},
 						{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING}
 					 };
 
@@ -1024,7 +1024,7 @@ void mlMainWindow::OnEditDvars()
 			break;
 		}
 		if(!dvarValue.toLatin1().isEmpty())
-			mRunDvars += " +set " + dvarName + " " + dvarValue;
+			mRunDvars += "+set " + dvarName + " " + dvarValue + " ";
 		size++;
 		++it;
 	}

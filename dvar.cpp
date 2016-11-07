@@ -62,7 +62,7 @@ QString Dvar::setDvarSetting(dvar_s _dvar, QCheckBox* _checkBox)
 	QSettings Settings;
 	Settings.setValue(QString("dvar_%1").arg(_dvar.name), _checkBox->isChecked());
 
-	return Settings.value(QString("dvar_%1").arg(_dvar.name)).toString();
+	return Settings.value(QString("dvar_%1").arg(_dvar.name)).toString() == "true" ? "1" : "0"; // another way to do this?
 }
 
 QString Dvar::setDvarSetting(dvar_s _dvar, QSpinBox* _spinBox)
