@@ -22,6 +22,7 @@ struct dvar_s
 	DvarType type;
 	dvar_value_u defaultValue;
 	int maxValue;
+	bool isCmd;
 };
 
 class Dvar

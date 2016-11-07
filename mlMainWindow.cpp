@@ -672,7 +672,7 @@ void mlMainWindow::OnEditBuild()
 	{
 		QStringList Args;
 
-		if(!mRunDvars.toLatin1().isEmpty())
+		if(!mRunDvars.isEmpty())
 			Args << mRunDvars;
 
 		Args << "+set" << "fs_game" << (LastMod.isEmpty() ? LastMap : LastMod);
@@ -963,7 +963,7 @@ void mlMainWindow::OnEditDvars()
 						{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
 						{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
 						{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_BOOL},
-						{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING}
+						{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING, NULL, NULL, true}
 					 };
 
 	QDialog Dialog(this, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint);
@@ -1003,7 +1003,7 @@ void mlMainWindow::OnEditDvars()
 
 	QTreeWidgetItemIterator it(DvarTree);
 	int size = 0;
-	mRunDvars = "";
+	mRunDvars.clear();
 	while (*it && size < ARRAYSIZE(dvars))
 	{
 		QWidget* widget = DvarTree->itemWidget(*it, 1);
@@ -1024,7 +1024,16 @@ void mlMainWindow::OnEditDvars()
 			break;
 		}
 		if(!dvarValue.toLatin1().isEmpty())
-			mRunDvars += "+set " + dvarName + " " + dvarValue + " ";
+		{
+			// Don't use qstring for mRunDvars as this willl hapen if Steam tries to launch the game
+			// http://i.imgur.com/Pgn6ZkW.png
+			// TODO: hack for cmds
+			if(!dvar.isCmd)
+				mRunDvars << "+set" << dvarName;
+			else
+				mRunDvars << QString("+%1").arg(dvarName);
+			mRunDvars << dvarValue;
+		}
 		size++;
 		++it;
 	}
@@ -1198,7 +1207,7 @@ void mlMainWindow::OnRunMapOrMod()
 		Args << QString("\"%1/mods/%2\"").arg(mGamePath, ModName);
 	}
 
-	if(!mRunDvars.toLatin1().isEmpty())
+	if(!mRunDvars.isEmpty())
 		Args << mRunDvars;
 
 	QList<QPair<QString, QStringList>> Commands;

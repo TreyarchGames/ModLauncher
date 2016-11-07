@@ -138,5 +138,5 @@ protected:
 	QString mGamePath;
 	QString mToolsPath;
 
-	QString mRunDvars;
+	QStringList mRunDvars;
 };
