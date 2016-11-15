@@ -27,7 +27,7 @@ Dvar::Dvar(dvar_s _dvar, QTreeWidget *_dvarTree) : dvar(_dvar)
 		spinBox->setValue(settings.value(dvarSetting, 0).toInt());
 		spinBox->setToolTip("Integer value, min to max any number.");
 		spinBox->setMaximum(dvar.maxValue);
-		spinBox->setMinimum(0);
+		spinBox->setMinimum(dvar.minValue);
 		_dvarTree->setItemWidget(Item, 1, spinBox);
 		break;
 	case DVAR_VALUE_STRING:

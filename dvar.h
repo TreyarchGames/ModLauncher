@@ -7,20 +7,12 @@ enum DvarType
 	DVAR_VALUE_STRING
 };
 
-union dvar_value_u
-{
-	bool boolean;
-	int integer;
-	float decimal;
-	QString* string;
-};
-
 struct dvar_s
 {
 	const char* name;
 	const char* description;
 	DvarType type;
-	dvar_value_u defaultValue;
+	int minValue;
 	int maxValue;
 	bool isCmd;
 };
@@ -29,7 +21,6 @@ class Dvar
 {
 private:
 	dvar_s dvar;
-	dvar_value_u* mValue;
 
 public:
 	Dvar();
