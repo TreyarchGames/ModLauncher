@@ -17,7 +17,6 @@
 */
 
 #pragma once
-#include "stdafx.h"
 
 class mlBuildThread : public QThread
 {

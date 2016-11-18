@@ -26,7 +26,15 @@ const int AppId = 311210;
 
 const char* gLanguages[] = { "english", "french", "italian", "spanish", "german", "portuguese", "russian", "polish", "japanese", "traditionalchinese", "simplifiedchinese", "englisharabic" };
 const char* gTags[] = { "Animation", "Audio", "Character", "Map", "Mod", "Mode", "Model", "Multiplayer", "Scorestreak", "Skin", "Specialist", "Texture", "UI", "Vehicle", "Visual Effect", "Weapon", "WIP", "Zombies" };
-
+dvar_s gDvars[] = {
+					{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
+					{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
+					{"g_password", "Password for your server", DVAR_VALUE_STRING},
+					{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
+					{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_BOOL},
+					{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
+					{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING, NULL, NULL, true}
+				 };
 enum mlItemType
 {
 	ML_ITEM_UNKNOWN,
@@ -955,16 +963,6 @@ void mlMainWindow::UpdateTheme()
 
 void mlMainWindow::OnEditDvars()
 {
-	dvar_s dvars[] = {
-						{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
-						{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
-						{"g_password", "Password for your server", DVAR_VALUE_STRING},
-						{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
-						{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_BOOL},
-						{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
-						{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING, NULL, NULL, true}
-					 };
-
 	QDialog Dialog(this, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint);
 	Dialog.setWindowTitle("Dvar Options");
 
@@ -988,8 +986,8 @@ void mlMainWindow::OnEditDvars()
 
 	Layout->addWidget(ButtonBox);
 
-	for(int DvarIdx = 0; DvarIdx < ARRAYSIZE(dvars); DvarIdx++)
-		Dvar(dvars[DvarIdx], DvarTree);
+	for(int DvarIdx = 0; DvarIdx < ARRAYSIZE(gDvars); DvarIdx++)
+		Dvar(gDvars[DvarIdx], DvarTree);
 
 	connect(ButtonBox, SIGNAL(accepted()), &Dialog, SLOT(accept()));
 	connect(ButtonBox, SIGNAL(rejected()), &Dialog, SLOT(reject()));
@@ -1003,11 +1001,11 @@ void mlMainWindow::OnEditDvars()
 	QTreeWidgetItemIterator it(DvarTree);
 
 	mRunDvars.clear();
-	while (*it && size < ARRAYSIZE(dvars))
+	while (*it && size < ARRAYSIZE(gDvars))
 	{
 		QWidget* widget = DvarTree->itemWidget(*it, 1);
 		dvarName = (*it)->data(0, 0).toString();
-		dvar_s dvar = Dvar::findDvar(dvarName, DvarTree, dvars, ARRAYSIZE(dvars));
+		dvar_s dvar = Dvar::findDvar(dvarName, DvarTree, gDvars, ARRAYSIZE(gDvars));
 		switch(dvar.type)
 		{
 		case DVAR_VALUE_BOOL:
@@ -1020,6 +1018,7 @@ void mlMainWindow::OnEditDvars()
 			dvarValue = Dvar::setDvarSetting(dvar, (QLineEdit*)widget);
 			break;
 		}
+
 		if(!dvarValue.toLatin1().isEmpty())
 		{
 			if(!dvar.isCmd)

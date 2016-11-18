@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include <QDebug>
 
 Dvar::Dvar(dvar_s _dvar, QTreeWidget *_dvarTree) : dvar(_dvar)
 {
