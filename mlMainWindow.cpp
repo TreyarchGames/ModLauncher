@@ -26,7 +26,15 @@ const int AppId = 311210;
 
 const char* gLanguages[] = { "english", "french", "italian", "spanish", "german", "portuguese", "russian", "polish", "japanese", "traditionalchinese", "simplifiedchinese", "englisharabic" };
 const char* gTags[] = { "Animation", "Audio", "Character", "Map", "Mod", "Mode", "Model", "Multiplayer", "Scorestreak", "Skin", "Specialist", "Texture", "UI", "Vehicle", "Visual Effect", "Weapon", "WIP", "Zombies" };
-
+dvar_s gDvars[] = {
+					{"ai_disableSpawn", "Disable AI from spawning", DVAR_VALUE_BOOL},
+					{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
+					{"g_password", "Password for your server", DVAR_VALUE_STRING},
+					{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
+					{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_BOOL},
+					{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
+					{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING, NULL, NULL, true}
+				 };
 enum mlItemType
 {
 	ML_ITEM_UNKNOWN,
@@ -92,7 +100,9 @@ mlMainWindow::mlMainWindow()
 
 	// Qt prefers '/' over '\\'
 	mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
+	mGamePath.chop(1);
 	mToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
+	mToolsPath.chop(1);
 
 	UpdateTheme();
 
@@ -163,6 +173,10 @@ mlMainWindow::mlMainWindow()
 	connect(mBuildButton, SIGNAL(clicked()), mActionEditBuild, SLOT(trigger()));
 	ActionsLayout->addWidget(mBuildButton);
 
+	mDvarsButton = new QPushButton("Dvars");
+	connect(mDvarsButton, SIGNAL(clicked()), this, SLOT(OnEditDvars()));
+	ActionsLayout->addWidget(mDvarsButton);
+
 	mIgnoreErrorsWidget = new QCheckBox("Ignore Errors");
 	ActionsLayout->addWidget(mIgnoreErrorsWidget);
 
@@ -173,12 +187,7 @@ mlMainWindow::mlMainWindow()
 
 	setCentralWidget(CentralWidget);
 
-	QFile File("shippedMaps.csv");
-	if (File.open(QIODevice::ReadOnly))
-	{
-		QString shippedMapStr = QString(File.readAll());
-		mShippedMapList = shippedMapStr.split(',');
-	}
+	mShippedMapList = { "mp_aerospace", "mp_apartments", "mp_arena", "mp_banzai", "mp_biodome", "mp_chinatown", "mp_city", "mp_conduit", "mp_crucible", "mp_cryogen", "mp_ethiopia", "mp_freerun_01", "mp_freerun_02", "mp_freerun_03", "mp_freerun_04", "mp_havoc", "mp_infection", "mp_kung_fu", "mp_metro", "mp_miniature", "mp_nuketown_x", "mp_redwood", "mp_rise", "mp_rome", "mp_ruins", "mp_sector", "mp_shrine", "mp_skyjacked", "mp_spire", "mp_stronghold", "mp_veiled", "mp_waterpark", "mp_western", "zm_castle", "zm_factory", "zm_genesis", "zm_island", "zm_levelcommon", "zm_stalingrad", "zm_zod" };
 
 	Settings.beginGroup("MainWindow");
 	resize(QSize(800, 600));
@@ -225,7 +234,7 @@ void mlMainWindow::CreateActions()
 	mActionEditPublish->setShortcut(QKeySequence("Ctrl+P"));
 	connect(mActionEditPublish, SIGNAL(triggered()), this, SLOT(OnEditPublish()));
 
-	mActionEditOptions = new QAction("Options...", this);
+	mActionEditOptions = new QAction("&Options...", this);
 	connect(mActionEditOptions, SIGNAL(triggered()), this, SLOT(OnEditOptions()));
 
 	mActionHelpAbout = new QAction("&About...", this);
@@ -296,7 +305,7 @@ void mlMainWindow::UpdateDB()
 		return;
 
 	QList<QPair<QString, QStringList>> Commands;
-	Commands.append(QPair<QString, QStringList>(QString("%1\\gdtdb\\gdtdb.exe").arg(mToolsPath), QStringList() << "/update"));
+	Commands.append(QPair<QString, QStringList>(QString("%1/gdtdb/gdtdb.exe").arg(mToolsPath), QStringList() << "/update"));
 
 	StartBuildThread(Commands);
 }
@@ -316,7 +325,7 @@ void mlMainWindow::PopulateFileList()
 {
 	mFileListWidget->clear();
 
-	QString UserMapsFolder = QDir::cleanPath(QString("%1\\usermaps\\").arg(mGamePath));
+	QString UserMapsFolder = QDir::cleanPath(QString("%1/usermaps/").arg(mGamePath));
 	QStringList UserMaps = QDir(UserMapsFolder).entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
 	QTreeWidgetItem* MapsRootItem = new QTreeWidgetItem(mFileListWidget, QStringList() << "Maps");
 
@@ -326,7 +335,7 @@ void mlMainWindow::PopulateFileList()
 
 	for (QString MapName : UserMaps)
 	{
-		QString ZoneFileName = QString("%1\\%2\\zone_source\\%3.zone").arg(UserMapsFolder, MapName, MapName);
+		QString ZoneFileName = QString("%1/%2/zone_source/%3.zone").arg(UserMapsFolder, MapName, MapName);
 
 		if (QFileInfo(ZoneFileName).isFile())
 		{
@@ -336,19 +345,19 @@ void mlMainWindow::PopulateFileList()
 		}
 	}
 
-	QString ModsFolder = QDir::cleanPath(QString("%1\\mods\\").arg(mGamePath));
+	QString ModsFolder = QDir::cleanPath(QString("%1/mods/").arg(mGamePath));
 	QStringList Mods = QDir(ModsFolder).entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
 	QTreeWidgetItem* ModsRootItem = new QTreeWidgetItem(mFileListWidget, QStringList() << "Mods");
 	ModsRootItem->setFont(0, Font);
+	const char* Files[4] = { "core_mod", "mp_mod", "cp_mod", "zm_mod" };
 
 	for (QString ModName : Mods)
 	{
-		const char* Files[4] = { "core_mod", "mp_mod", "cp_mod", "zm_mod" };
 		QTreeWidgetItem* ParentItem = NULL;
 
 		for (int FileIdx = 0; FileIdx < 4; FileIdx++)
 		{
-			QString ZoneFileName = QString("%1\\%2\\zone_source\\%3.zone").arg(ModsFolder, ModName, Files[FileIdx]);
+			QString ZoneFileName = QString("%1/%2/zone_source/%3.zone").arg(ModsFolder, ModName, Files[FileIdx]);
 
 			if (QFileInfo(ZoneFileName).isFile())
 			{
@@ -398,7 +407,7 @@ void mlMainWindow::OnFileAssetEditor()
 {
 	QProcess* Process = new QProcess();
 	connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
-	Process->start(QString("%1\\bin\\AssetEditor_modtools.exe").arg(mToolsPath), QStringList());
+	Process->start(QString("%1/bin/AssetEditor_modtools.exe").arg(mToolsPath), QStringList());
 }
 
 void mlMainWindow::OnFileLevelEditor()
@@ -410,17 +419,17 @@ void mlMainWindow::OnFileLevelEditor()
 	if (ItemList.count() && ItemList[0]->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
 		QString MapName = ItemList[0]->text(0);
-		Process->start(QString("%1\\bin\\radiant_modtools.exe").arg(mToolsPath), QStringList() << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName));
+		Process->start(QString("%1/bin/radiant_modtools.exe").arg(mToolsPath), QStringList() << QString("%1/map_source/%2/%3.map").arg(mGamePath, MapName.left(2), MapName));
 	}
 	else
 	{
-		Process->start(QString("%1\\bin\\radiant_modtools.exe").arg(mToolsPath), QStringList());
+		Process->start(QString("%1/bin/radiant_modtools.exe").arg(mToolsPath), QStringList());
 	}
 }
 
 void mlMainWindow::OnFileNew()
 {
-	QDir TemplatesFolder(QString("%1\\rex\\templates").arg(mToolsPath));
+	QDir TemplatesFolder(QString("%1/rex/templates").arg(mToolsPath));
 	QStringList Templates = TemplatesFolder.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
 
 	if (Templates.isEmpty())
@@ -558,7 +567,7 @@ void mlMainWindow::OnEditBuild()
 	{
 		if (!UpdateAdded)
 		{
-			Commands.append(QPair<QString, QStringList>(QString("%1\\gdtdb\\gdtdb.exe").arg(mToolsPath), QStringList() << "/update"));
+			Commands.append(QPair<QString, QStringList>(QString("%1/gdtdb/gdtdb.exe").arg(mToolsPath), QStringList() << "/update"));
 			UpdateAdded = true;
 		}
 	};
@@ -606,10 +615,10 @@ void mlMainWindow::OnEditBuild()
 				else
 					Args << "-navmesh" << "-navvolume";
 
-				Args << "-loadFrom" << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName);
-				Args << QString("%1\\share\\raw\\maps\\%2\\%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
+				Args << "-loadFrom" << QString("%1/map_source/%2/%3.map").arg(mGamePath, MapName.left(2), MapName);
+				Args << QString("%1/share/raw/maps/%2/%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
 
-				Commands.append(QPair<QString, QStringList>(QString("%1\\bin\\cod2map64.exe").arg(mToolsPath), Args));
+				Commands.append(QPair<QString, QStringList>(QString("%1/bin/cod2map64.exe").arg(mToolsPath), Args));
 			}
 
 			if (mLightEnabledWidget->isChecked())
@@ -635,15 +644,15 @@ void mlMainWindow::OnEditBuild()
 					break;
 				}
 
-				Args << "+localprobes" << "+forceclean" << "+recompute" << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName);
-				Commands.append(QPair<QString, QStringList>(QString("%1\\bin\\radiant_modtools.exe").arg(mToolsPath), Args));
+				Args << "+localprobes" << "+forceclean" << "+recompute" << QString("%1/map_source/%2/%3.map").arg(mGamePath, MapName.left(2), MapName);
+				Commands.append(QPair<QString, QStringList>(QString("%1/bin/radiant_modtools.exe").arg(mToolsPath), Args));
 			}
 
 			if (mLinkEnabledWidget->isChecked())
 			{
 				AddUpdateDBCommand();
 
-				Commands.append(QPair<QString, QStringList>(QString("%1\\bin\\linker_modtools.exe").arg(mToolsPath), QStringList() << LanguageArgs << "-modsource" << MapName));
+				Commands.append(QPair<QString, QStringList>(QString("%1/bin/linker_modtools.exe").arg(mToolsPath), QStringList() << LanguageArgs << "-modsource" << MapName));
 			}
 
 			LastMap = MapName;
@@ -657,7 +666,7 @@ void mlMainWindow::OnEditBuild()
 				AddUpdateDBCommand();
 
 				QString ZoneName = Item->text(0);
-				Commands.append(QPair<QString, QStringList>(QString("%1\\bin\\linker_modtools.exe").arg(mToolsPath), QStringList() << LanguageArgs << "-fs_game" << ModName << "-modsource" << ZoneName));
+				Commands.append(QPair<QString, QStringList>(QString("%1/bin/linker_modtools.exe").arg(mToolsPath), QStringList() << LanguageArgs << "-fs_game" << ModName << "-modsource" << ZoneName));
 			}
 
 			LastMod = ModName;
@@ -668,6 +677,9 @@ void mlMainWindow::OnEditBuild()
 	{
 		QStringList Args;
 
+		if(!mRunDvars.isEmpty())
+			Args << mRunDvars;
+
 		Args << "+set" << "fs_game" << (LastMod.isEmpty() ? LastMap : LastMod);
 
 		if (!LastMap.isEmpty())
@@ -677,7 +689,7 @@ void mlMainWindow::OnEditBuild()
 		if (!ExtraOptions.isEmpty())
 			Args << ExtraOptions.split(' ');
 
-		Commands.append(QPair<QString, QStringList>(QString("%1\\BlackOps3.exe").arg(mGamePath), Args));
+		Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
 	}
 
 	if (Commands.size() == 0 && !UpdateAdded)
@@ -717,19 +729,19 @@ void mlMainWindow::OnEditPublish()
 	QString Folder;
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
-		Folder = "usermaps\\" + Item->text(0);
+		Folder = "usermaps/" + Item->text(0);
 		mType = "map";
 		mFolderName = Item->text(0);
 	}
 	else
 	{
-		Folder = "mods\\" + Item->parent()->text(0);
+		Folder = "mods/" + Item->parent()->text(0);
 		mType = "mod";
 		mFolderName = Item->parent()->text(0);
 	}
 
-	mWorkshopFolder = QString("%1\\%2\\zone").arg(mGamePath, Folder);
-	QFile File(mWorkshopFolder + "\\workshop.json");
+	mWorkshopFolder = QString("%1/%2/zone").arg(mGamePath, Folder);
+	QFile File(mWorkshopFolder + "/workshop.json");
 
 	if (!QFileInfo(mWorkshopFolder).isDir())
 	{
@@ -936,7 +948,7 @@ void mlMainWindow::UpdateTheme()
 	if (mTreyarchTheme)
 	{
 		qApp->setStyle("plastique");
-		QFile file(QString("%1\\radiant\\stylesheet.qss").arg(mToolsPath));
+		QFile file(QString("%1/radiant/stylesheet.qss").arg(mToolsPath));
 		file.open(QFile::ReadOnly);
 		QString styleSheet = QLatin1String(file.readAll());
 		file.close();
@@ -946,6 +958,77 @@ void mlMainWindow::UpdateTheme()
 	{
 		qApp->setStyle("WindowsVista");
 		qApp->setStyleSheet("");
+	}
+}
+
+void mlMainWindow::OnEditDvars()
+{
+	QDialog Dialog(this, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint);
+	Dialog.setWindowTitle("Dvar Options");
+
+	QVBoxLayout* Layout = new QVBoxLayout(&Dialog);
+
+	QLabel* Label = new QLabel(&Dialog);
+	Label->setText("Dvars that are to be used when you run the game.\nMust press \"OK\" in order to save the values!");
+	Layout->addWidget(Label);
+
+	QTreeWidget* DvarTree = new QTreeWidget(&Dialog);
+	DvarTree->setColumnCount(2);
+	DvarTree->setHeaderLabels(QStringList() << "Dvar" << "Value");
+	DvarTree->setUniformRowHeights(true);
+	DvarTree->setRootIsDecorated(false);
+	Layout->addWidget(DvarTree);
+
+	QDialogButtonBox* ButtonBox = new QDialogButtonBox(&Dialog);
+	ButtonBox->setOrientation(Qt::Horizontal);
+	ButtonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	ButtonBox->setCenterButtons(true);
+
+	Layout->addWidget(ButtonBox);
+
+	for(int DvarIdx = 0; DvarIdx < ARRAYSIZE(gDvars); DvarIdx++)
+		Dvar(gDvars[DvarIdx], DvarTree);
+
+	connect(ButtonBox, SIGNAL(accepted()), &Dialog, SLOT(accept()));
+	connect(ButtonBox, SIGNAL(rejected()), &Dialog, SLOT(reject()));
+
+	if (Dialog.exec() != QDialog::Accepted)
+		return;
+
+	int size = 0;
+	QSettings settings;
+	QString dvarName, dvarValue;
+	QTreeWidgetItemIterator it(DvarTree);
+
+	mRunDvars.clear();
+	while (*it && size < ARRAYSIZE(gDvars))
+	{
+		QWidget* widget = DvarTree->itemWidget(*it, 1);
+		dvarName = (*it)->data(0, 0).toString();
+		dvar_s dvar = Dvar::findDvar(dvarName, DvarTree, gDvars, ARRAYSIZE(gDvars));
+		switch(dvar.type)
+		{
+		case DVAR_VALUE_BOOL:
+			dvarValue = Dvar::setDvarSetting(dvar, (QCheckBox*)widget);
+			break;
+		case DVAR_VALUE_INT:
+			dvarValue = Dvar::setDvarSetting(dvar, (QSpinBox*)widget);
+			break;
+		case DVAR_VALUE_STRING:
+			dvarValue = Dvar::setDvarSetting(dvar, (QLineEdit*)widget);
+			break;
+		}
+
+		if(!dvarValue.toLatin1().isEmpty())
+		{
+			if(!dvar.isCmd)
+				mRunDvars << "+set" << dvarName;
+			else			// hack for cmds
+				mRunDvars << QString("+%1").arg(dvarName);
+			mRunDvars << dvarValue;
+		}
+		size++;
+		++it;
 	}
 }
 
@@ -961,7 +1044,7 @@ void mlMainWindow::UpdateWorkshopItem()
 	Root["FolderName"] = mFolderName;
 	Root["Tags"] = mTags.join(',');
 
-	QString WorkshopFile(mWorkshopFolder + "\\workshop.json");
+	QString WorkshopFile(mWorkshopFolder + "/workshop.json");
 	QFile File(WorkshopFile);
 
 	if (!File.open(QIODevice::WriteOnly))
@@ -1103,22 +1186,30 @@ void mlMainWindow::OnRunMapOrMod()
 	QTreeWidgetItem* Item = ItemList[0];
 
 	QStringList Args;
+
+	if(!mRunDvars.isEmpty())
+		Args << mRunDvars;
+
 	Args << "+set" << "fs_game";
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
 		QString MapName = Item->text(0);
-		Args << QString("\"%1/usermaps/%2\"").arg(mGamePath, MapName);
+		Args << MapName;
 		Args << "+devmap" << MapName;
 	}
 	else
 	{
 		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
-		Args << QString("\"%1/mods/%2\"").arg(mGamePath, ModName);
+		Args << ModName;
 	}
 
+	QString ExtraOptions = mRunOptionsWidget->text();
+	if (!ExtraOptions.isEmpty())
+		Args << ExtraOptions.split(' ');
+
 	QList<QPair<QString, QStringList>> Commands;
-	Commands.append(QPair<QString, QStringList>(QString("%1\\BlackOps3.exe").arg(mGamePath), Args));
+	Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
 	StartBuildThread(Commands);
 }
 
