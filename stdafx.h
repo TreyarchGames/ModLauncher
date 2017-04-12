@@ -22,3 +22,4 @@
 #include "steam_api.h"
 
 class mlMainWindow;
+class mlExport2BinWidget;

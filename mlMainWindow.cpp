@@ -82,6 +82,150 @@ void mlBuildThread::run()
 	mSuccess = Success;
 }
 
+mlConvertThread::mlConvertThread(QStringList& Files, QString& OutputDir, bool IgnoreErrors, bool OverwriteFiles)
+	: mFiles(Files), mOutputDir(OutputDir), mSuccess(false), mCancel(false), mIgnoreErrors(IgnoreErrors), mOverwrite(OverwriteFiles)
+{
+}
+
+void mlConvertThread::run()
+{
+	bool Success = true;
+
+	unsigned int convCountSuccess	= 0;
+	unsigned int convCountSkipped	= 0;
+	unsigned int convCountFailed	= 0;
+
+	for (QString file : mFiles)
+	{
+		QFileInfo file_info(file);
+		QString working_directory = file_info.absolutePath();
+
+		QProcess* Process = new QProcess();
+		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
+		Process->setWorkingDirectory(working_directory);
+		Process->setProcessChannelMode(QProcess::MergedChannels);
+
+		file = file_info.baseName();
+
+		QString ToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
+		QString ExecutablePath = QString("%1bin/export2bin.exe").arg(ToolsPath);
+
+		QStringList args;
+		//args.append("/v"); // Verbose
+		args.append("/piped");
+
+		QString filepath = file_info.absoluteFilePath();
+
+		QString ext = file_info.suffix().toUpper();
+		if (ext == "XANIM_EXPORT")
+			ext = ".XANIM_BIN";
+		else if (ext == "XMODEL_EXPORT")
+			ext = ".XMODEL_BIN";
+		else
+		{
+			emit OutputReady("Export2Bin: Skipping file '" + filepath + "' (file has invalid extension)\n");
+			convCountSkipped++;
+			continue;
+		}
+
+		QString target_filepath = QDir::cleanPath(mOutputDir) + QDir::separator() + file + ext;
+
+		QFile infile(filepath);
+		QFile outfile(target_filepath);
+
+		if (!mOverwrite && outfile.exists())
+		{
+			emit OutputReady("Export2Bin: Skipping file '" + filepath + "' (file already exists)\n");
+			convCountSkipped++;
+			continue;
+		}
+
+		infile.open(QIODevice::OpenMode::enum_type::ReadOnly);
+		if (!infile.isOpen())
+		{
+			emit OutputReady("Export2Bin: Could not open '" + filepath + "' for reading\n");
+			convCountFailed++;
+			continue;
+		}
+
+		emit OutputReady("Export2Bin: Converting '" + file + "'");
+
+		QByteArray buf = infile.readAll();
+		infile.close();
+
+		Process->start(ExecutablePath, args);
+		Process->write(buf);
+		Process->closeWriteChannel();
+
+		QByteArray standardOutputPipeData;
+		QByteArray standardErrorPipeData;
+
+		for (;;)
+		{
+			Sleep(20);
+
+			if (Process->waitForReadyRead(0))
+			{
+				standardOutputPipeData.append(Process->readAllStandardOutput());
+				standardErrorPipeData.append(Process->readAllStandardError());
+			}
+
+			QProcess::ProcessState State = Process->state();
+			if (State == QProcess::NotRunning)
+				break;
+
+			if (mCancel)
+				Process->kill();
+		}
+
+		if (Process->exitStatus() != QProcess::NormalExit)
+		{
+			emit OutputReady("ERROR: Process exited abnormally");
+			Success = false;
+			break;
+		}
+
+		if (Process->exitCode() != 0)
+		{
+			emit OutputReady(standardOutputPipeData);
+			emit OutputReady(standardErrorPipeData);
+
+			convCountFailed++;
+
+			if (!mIgnoreErrors)
+			{
+				Success = false;
+				break;
+			}
+
+			continue;
+		}
+
+		outfile.open(QIODevice::OpenMode::enum_type::WriteOnly);
+		if (!outfile.isOpen())
+		{
+			emit OutputReady("Export2Bin: Could not open '" + target_filepath + "' for writing\n");
+			continue;
+		}
+
+		outfile.write(standardOutputPipeData);
+		outfile.close();
+
+		convCountSuccess++;
+	}
+
+	mSuccess = Success;
+	if (mSuccess)
+	{
+		QString msg = QString("Export2Bin: Finished!\n\n"
+			"Files Processed: %1\n"
+			"Successes: %2\n"
+			"Skipped: %3\n"
+			"Failures: %4\n").arg(mFiles.count()).arg(convCountSuccess).arg(convCountSkipped).arg(convCountFailed);
+		emit OutputReady(msg);
+	}
+}
+
 mlMainWindow::mlMainWindow()
 {
 	QSettings Settings;
@@ -104,6 +248,8 @@ mlMainWindow::mlMainWindow()
 	CreateActions();
 	CreateMenu();
 	CreateToolBar();
+
+	mExport2BinGUIWidget = NULL;
 
 	QSplitter* CentralWidget = new QSplitter();
 	CentralWidget->setOrientation(Qt::Vertical);
@@ -216,7 +362,7 @@ void mlMainWindow::CreateActions()
 
 	mActionFileExport2Bin = new QAction(QIcon(":/resources/Export2Bin.png"), "&Export2Bin GUI", this);
 	mActionFileExport2Bin->setShortcut(QKeySequence("Ctrl+E"));
-	connect(mActionFileExport2Bin, SIGNAL(triggered()), this, SLOT(OnFileAssetEditor()));
+	connect(mActionFileExport2Bin, SIGNAL(triggered()), this, SLOT(OnFileExport2Bin()));
 
 	mActionFileExit = new QAction("E&xit", this);
 	connect(mActionFileExit, SIGNAL(triggered()), this, SLOT(close()));
@@ -280,6 +426,57 @@ void mlMainWindow::CreateToolBar()
 	addToolBar(Qt::TopToolBarArea, ToolBar);
 }
 
+void mlMainWindow::InitExport2BinGUI()
+{
+	QDockWidget *dock = new QDockWidget(this, NULL);
+	dock->setWindowTitle("Export2Bin");
+	dock->setFloating(true);
+
+	QWidget* widget = new QWidget(dock);
+	QGridLayout* gridLayout = new QGridLayout();
+	widget->setLayout(gridLayout);
+	dock->setWidget(widget);
+
+	Export2BinGroupBox* groupBox = new Export2BinGroupBox(dock, this);
+	gridLayout->addWidget(groupBox, 0, 0);
+
+	QLabel* label = new QLabel("Drag Files Here", groupBox);
+	label->setAlignment(Qt::AlignCenter);
+	QVBoxLayout* groupBoxLayout = new QVBoxLayout(groupBox);
+	groupBoxLayout->addWidget(label);
+	groupBox->setLayout(groupBoxLayout);
+
+	mExport2BinOverwriteWidget = new QCheckBox("&Overwrite Existing Files", widget);
+	gridLayout->addWidget(mExport2BinOverwriteWidget, 1, 0);
+	
+	QSettings Settings;
+	mExport2BinOverwriteWidget->setChecked(Settings.value("Export2Bin_OverwriteFiles", true).toBool());
+
+	QHBoxLayout* dirLayout = new QHBoxLayout();
+	QLabel* dirLabel = new QLabel("Ouput Directory:", widget);
+	mExport2BinTargetDirWidget = new QLineEdit(widget);
+	QPushButton* dirBrowseButton = new QPushButton("...", widget);
+
+	const QDir defaultPath = QString("%1/model_export/export2bin/").arg(mToolsPath);
+	mExport2BinTargetDirWidget->setText(Settings.value("Export2Bin_TargetDir", defaultPath.absolutePath()).toString());
+
+	connect(dirBrowseButton, SIGNAL(clicked()), this, SLOT(OnExport2BinChooseDirectory()));
+	connect(mExport2BinOverwriteWidget, SIGNAL(clicked()), this, SLOT(OnExport2BinToggleOverwriteFiles()));
+
+	dirBrowseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	dirLayout->addWidget(dirLabel);
+	dirLayout->addWidget(mExport2BinTargetDirWidget);
+	dirLayout->addWidget(dirBrowseButton);
+
+	gridLayout->addLayout(dirLayout, 2, 0);
+
+	groupBox->setAcceptDrops(true);
+
+	dock->resize(QSize(256, 256));
+
+	mExport2BinGUIWidget = dock;
+}
+
 void mlMainWindow::closeEvent(QCloseEvent* Event)
 {
 	QSettings Settings;
@@ -316,6 +513,14 @@ void mlMainWindow::StartBuildThread(const QList<QPair<QString, QStringList>>& Co
 	connect(mBuildThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
 	connect(mBuildThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
 	mBuildThread->start();
+}
+
+void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite)
+{
+	mConvertThread = new mlConvertThread(pathList, outputDir, true, allowOverwrite);
+	connect(mConvertThread, SIGNAL(OutputReady(QString)), this, SLOT(BuildOutputReady(QString)));
+	connect(mConvertThread, SIGNAL(finished()), this, SLOT(BuildFinished()));
+	mConvertThread->start();
 }
 
 void mlMainWindow::PopulateFileList()
@@ -422,6 +627,17 @@ void mlMainWindow::OnFileLevelEditor()
 	{
 		Process->start(QString("%1\\bin\\radiant_modtools.exe").arg(mToolsPath), QStringList());
 	}
+}
+
+void mlMainWindow::OnFileExport2Bin()
+{
+	if (mExport2BinGUIWidget == NULL)
+	{
+		InitExport2BinGUI();
+		mExport2BinGUIWidget->hide(); // Ensure the window is hidden (just in case)
+	}
+
+	mExport2BinGUIWidget->isVisible() ? mExport2BinGUIWidget->hide() : mExport2BinGUIWidget->show();
 }
 
 void mlMainWindow::OnFileNew()
@@ -1155,6 +1371,21 @@ void mlMainWindow::OnDelete()
 	PopulateFileList();
 }
 
+void mlMainWindow::OnExport2BinChooseDirectory()
+{
+	const QString dir = QFileDialog::getExistingDirectory(mExport2BinGUIWidget, tr("Open Directory"), mToolsPath, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+	this->mExport2BinTargetDirWidget->setText(dir);
+
+	QSettings Settings;
+	Settings.setValue("Export2Bin_TargetDir", dir);
+}
+
+void mlMainWindow::OnExport2BinToggleOverwriteFiles()
+{
+	QSettings Settings;
+	Settings.setValue("Export2Bin_OverwriteFiles", mExport2BinOverwriteWidget->isChecked());
+}
+
 void mlMainWindow::BuildOutputReady(QString Output)
 {
 	mOutputWidget->appendPlainText(Output);
@@ -1165,4 +1396,51 @@ void mlMainWindow::BuildFinished()
 	mBuildButton->setText("Build");
 	mBuildThread->deleteLater();
 	mBuildThread = NULL;
+}
+
+Export2BinGroupBox::Export2BinGroupBox(QWidget* parent, mlMainWindow* parent_window) : QGroupBox(parent), parentWindow(parent_window)
+{
+	this->setAcceptDrops(true);
+}
+
+void Export2BinGroupBox::dragEnterEvent(QDragEnterEvent* event)
+{
+	event->acceptProposedAction();
+}
+
+void Export2BinGroupBox::dropEvent(QDropEvent* event)
+{
+	const QMimeData* mimeData = event->mimeData();
+
+	if (parentWindow == NULL)
+	{
+		return;
+	}
+
+	if (mimeData->hasUrls())
+	{
+		QStringList pathList;
+		QList<QUrl> urlList = mimeData->urls();
+
+		QDir working_dir(parentWindow->mToolsPath);
+		for (int i = 0; i < urlList.size(); i++)
+		{
+			pathList.append(urlList.at(i).toLocalFile());
+		}
+		
+		QProcess* Process = new QProcess();
+		connect(Process, SIGNAL(finished(int)), Process, SLOT(deleteLater()));
+
+		bool allowOverwrite = this->parentWindow->mExport2BinOverwriteWidget->isChecked();
+
+		QString outputDir = parentWindow->mExport2BinTargetDirWidget->text();
+		parentWindow->StartConvertThread(pathList, outputDir, allowOverwrite);
+		
+		event->acceptProposedAction();
+	}
+}
+
+void Export2BinGroupBox::dragLeaveEvent(QDragLeaveEvent* event)
+{
+	event->accept();
 }
