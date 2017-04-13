@@ -109,6 +109,7 @@ protected slots:
 	void OnOpenZoneFile();
 	void OnOpenModRootFolder();
 	void OnRunMapOrMod();
+	void OnCleanXPaks();
 	void OnDelete();
 	void OnExport2BinChooseDirectory();
 	void OnExport2BinToggleOverwriteFiles();

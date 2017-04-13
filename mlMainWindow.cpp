@@ -610,6 +610,7 @@ void mlMainWindow::ContextMenuRequested()
 
 	Menu->addSeparator();
 	Menu->addAction("Delete", this, SLOT(OnDelete()));
+	Menu->addAction("Clean XPaks", this, SLOT(OnCleanXPaks()));
 
 	Menu->exec(QCursor::pos());
 }
@@ -1433,6 +1434,54 @@ void mlMainWindow::OnRunMapOrMod()
 	QList<QPair<QString, QStringList>> Commands;
 	Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
 	StartBuildThread(Commands);
+}
+
+void mlMainWindow::OnCleanXPaks()
+{
+	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
+	if (ItemList.isEmpty())
+		return;
+
+	QTreeWidgetItem* Item = ItemList[0];
+	QString Folder;
+
+	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
+	{
+		QString MapName = Item->text(0);
+		Folder = QString("%1/usermaps/%2").arg(mGamePath, MapName);
+	}
+	else
+	{
+		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
+		Folder = QString("%1/mods/%2").arg(mGamePath, ModName);
+	}
+
+	QString fileListString;
+	QStringList fileList;
+	QDirIterator it(Folder, QStringList() << "*.xpak", QDir::Files, QDirIterator::Subdirectories);
+	while (it.hasNext())
+	{
+		QString filepath = it.next();
+		fileList.append(filepath);
+		fileListString.append("\n" + QDir(Folder).relativeFilePath(filepath));
+	}
+
+	QString relativeFolder = QDir(mGamePath).relativeFilePath(Folder);
+
+	if (fileList.count() == 0)
+	{
+		QMessageBox::information(this, QString("Clean XPaks (%1)").arg(relativeFolder), QString("There are no XPak's to clean!"));
+		return;
+	}
+
+	if (QMessageBox::question(this, QString("Clean XPaks (%1)").arg(relativeFolder), QString("Are you sure you want to delete the following files?" + fileListString), QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
+		return;
+
+	for (auto file : fileList)
+	{
+		qDebug() << file;
+		QFile(file).remove();
+	}
 }
 
 void mlMainWindow::OnDelete()
