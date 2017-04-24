@@ -1197,6 +1197,7 @@ void mlMainWindow::OnEditDvars()
 
 	QTreeWidget* DvarTree = new QTreeWidget(&Dialog);
 	DvarTree->setColumnCount(2);
+	DvarTree->setColumnWidth(0, 150);
 	DvarTree->setHeaderLabels(QStringList() << "Dvar" << "Value");
 	DvarTree->setUniformRowHeights(true);
 	DvarTree->setRootIsDecorated(false);
