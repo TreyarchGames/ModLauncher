@@ -31,9 +31,11 @@ dvar_s gDvars[] = {
 					{"developer", "Run developer mode", DVAR_VALUE_INT, 0, 2},
 					{"g_password", "Password for your server", DVAR_VALUE_STRING},
 					{"logfile", "Console log information written to current fs_game", DVAR_VALUE_INT, 0, 2},
-					{"scr_mod_enable_devblock", "Developer blocks are executed in mods.", DVAR_VALUE_BOOL},
+					{"scr_mod_enable_devblock", "Developer blocks are executed in mods ", DVAR_VALUE_BOOL},
 					{"connect", "Connect to a specific server", DVAR_VALUE_STRING, NULL, NULL, true},
-					{"set_gametype", "Set a gametype to load on map", DVAR_VALUE_STRING, NULL, NULL, true}
+					{"set_gametype", "Set a gametype to load with map", DVAR_VALUE_STRING, NULL, NULL, true},
+					{"splitscreen", "Enable splitscreen", DVAR_VALUE_BOOL},
+					{"splitscreen_playerCount", "Allocate the number of instances for splitscreen", DVAR_VALUE_INT, 0, 2}
 				 };
 enum mlItemType
 {
@@ -1332,9 +1334,15 @@ void mlMainWindow::UpdateWorkshopItem()
 
 void mlMainWindow::OnCreateItemResult(CreateItemResult_t* CreateItemResult, bool IOFailure)
 {
-	if (IOFailure || CreateItemResult->m_eResult != k_EResultOK)
+	if (IOFailure)
 	{
-		QMessageBox::warning(this, "Error", "Error creating Steam Workshop item.");
+		QMessageBox::warning(this, "Error", "Disk Read error.");
+		return;
+	}
+
+	if (CreateItemResult->m_eResult != k_EResultOK)
+	{
+		QMessageBox::warning(this, "Error", "Error creating Steam Workshop item. Error code: " + CreateItemResult->m_eResult);
 		return;
 	}
 
@@ -1345,9 +1353,15 @@ void mlMainWindow::OnCreateItemResult(CreateItemResult_t* CreateItemResult, bool
 
 void mlMainWindow::OnUpdateItemResult(SubmitItemUpdateResult_t* UpdateItemResult, bool IOFailure)
 {
-	if (IOFailure || UpdateItemResult->m_eResult != k_EResultOK)
+	if (IOFailure)
 	{
-		QMessageBox::warning(this, "Error", "Error updating Steam Workshop item.");
+		QMessageBox::warning(this, "Error", "Disk Read error.");
+		return;
+	}
+
+	if (UpdateItemResult->m_eResult != k_EResultOK)
+	{
+		QMessageBox::warning(this, "Error", "Error updating Steam Workshop item. Error code: " + UpdateItemResult->m_eResult);
 		return;
 	}
 
