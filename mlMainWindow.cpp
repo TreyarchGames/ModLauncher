@@ -466,7 +466,8 @@ void mlMainWindow::InitExport2BinGUI()
 	QHBoxLayout* dirLayout = new QHBoxLayout();
 	QLabel* dirLabel = new QLabel("Ouput Directory:", widget);
 	mExport2BinTargetDirWidget = new QLineEdit(widget);
-	QPushButton* dirBrowseButton = new QPushButton("...", widget);
+	QToolButton* dirBrowseButton = new QToolButton(widget);
+	dirBrowseButton->setText("...");
 
 	const QDir defaultPath = QString("%1/model_export/export2bin/").arg(mToolsPath);
 	mExport2BinTargetDirWidget->setText(Settings.value("Export2Bin_TargetDir", defaultPath.absolutePath()).toString());
