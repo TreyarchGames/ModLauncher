@@ -52,6 +52,9 @@
     <ClCompile Include="GeneratedFiles\External_Release\moc_mlMainWindow.cpp">
       <Filter>Generated Files\External_Release</Filter>
     </ClCompile>
+    <ClCompile Include="dvar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModLauncher.rc">
@@ -71,5 +74,10 @@
     <CustomBuild Include="stdafx.h">
       <Filter>Source Files</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dvar.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
