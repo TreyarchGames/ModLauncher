@@ -8,3 +8,8 @@ sdk
 *.HavokScriptPlugin
 *.user
 *.aps
+ModLauncher.rar
+ModLauncher.pro
+steam_api64.lib
+steam_api64.dll
+/steam

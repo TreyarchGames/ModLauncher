@@ -45,9 +45,41 @@ protected:
 	bool mIgnoreErrors;
 };
 
+class mlConvertThread : public QThread
+{
+	Q_OBJECT
+
+public:
+	mlConvertThread(QStringList& Files, QString& OutputDir, bool IgnoreErrors, bool mOverwrite);
+	void run();
+	bool Succeeded() const
+	{
+		return mSuccess;
+	}
+
+	void Cancel()
+	{
+		mCancel = true;
+	}
+
+signals:
+	void OutputReady(const QString& Output);
+
+protected:
+	QStringList mFiles;
+	QString mOutputDir;
+	bool mOverwrite;
+
+	bool mSuccess;
+	bool mCancel;
+	bool mIgnoreErrors;
+};
+
 class mlMainWindow : public QMainWindow
 {
 	Q_OBJECT
+
+	friend class Export2BinGroupBox;
 
 public:
 	mlMainWindow();
@@ -68,23 +100,30 @@ protected slots:
 	void OnFileNew();
 	void OnFileAssetEditor();
 	void OnFileLevelEditor();
+	void OnFileExport2Bin();
 	void OnEditBuild();
 	void OnEditPublish();
 	void OnEditOptions();
+	void OnEditDvars();
 	void OnHelpAbout();
 	void OnOpenZoneFile();
 	void OnOpenModRootFolder();
 	void OnRunMapOrMod();
+	void OnCleanXPaks();
 	void OnDelete();
+	void OnExport2BinChooseDirectory();
+	void OnExport2BinToggleOverwriteFiles();
 	void BuildOutputReady(QString Output);
 	void BuildFinished();
-	void ContextMenuRequested(const QPoint& Point);
+	void ContextMenuRequested();
 	void SteamUpdate();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
 
 	void StartBuildThread(const QList<QPair<QString, QStringList>>& Commands);
+	void mlMainWindow::StartConvertThread(QStringList& pathList, QString& outputDir, bool allowOverwrite);
+
 	void PopulateFileList();
 	void UpdateWorkshopItem();
 	void ShowPublishDialog();
@@ -94,9 +133,12 @@ protected:
 	void CreateMenu();
 	void CreateToolBar();
 
+	void InitExport2BinGUI();
+
 	QAction* mActionFileNew;
 	QAction* mActionFileAssetEditor;
 	QAction* mActionFileLevelEditor;
+	QAction* mActionFileExport2Bin;
 	QAction* mActionFileExit;
 	QAction* mActionEditBuild;
 	QAction* mActionEditPublish;
@@ -107,6 +149,7 @@ protected:
 	QPlainTextEdit* mOutputWidget;
 
 	QPushButton* mBuildButton;
+	QPushButton* mDvarsButton;
 	QCheckBox* mCompileEnabledWidget;
 	QComboBox* mCompileModeWidget;
 	QCheckBox* mLightEnabledWidget;
@@ -117,6 +160,11 @@ protected:
 	QCheckBox* mIgnoreErrorsWidget;
 
 	mlBuildThread* mBuildThread;
+	mlConvertThread* mConvertThread;
+
+	QDockWidget* mExport2BinGUIWidget;
+	QCheckBox* mExport2BinOverwriteWidget;
+	QLineEdit* mExport2BinTargetDirWidget;
 
 	bool mTreyarchTheme;
 	QString mBuildLanguage;
@@ -135,4 +183,20 @@ protected:
 
 	QString mGamePath;
 	QString mToolsPath;
+
+	QStringList mRunDvars;
+};
+
+class Export2BinGroupBox : public QGroupBox
+{
+private:
+	mlMainWindow* parentWindow;
+
+protected:
+	void dragEnterEvent(QDragEnterEvent* event);
+	void dragLeaveEvent(QDragLeaveEvent* event);
+	void dropEvent(QDropEvent *event);
+
+public:
+	Export2BinGroupBox(QWidget *parent, mlMainWindow* parent_window);
 };
