@@ -673,7 +673,7 @@ void mlMainWindow::OnFileNew()
 	Layout->addLayout(FormLayout);
 
 	QLineEdit* NameWidget = new QLineEdit();
-	NameWidget->setValidator(new QRegularExpressionValidator(QRegularExpression("[a-z0-9_]*"), this));
+	NameWidget->setValidator(new QRegularExpressionValidator(QRegularExpression("[a-zA-Z0-9_]*"), this));
 	FormLayout->addRow("Name:", NameWidget);
 
 	QComboBox* TemplateWidget = new QComboBox();
@@ -712,7 +712,7 @@ void mlMainWindow::OnFileNew()
 		return;
 	}
 
-	QByteArray MapName = NameWidget->text().toLatin1();
+	QByteArray MapName = NameWidget->text().toLatin1().toLower();
 	QString Output;
 
 	QString Template = Templates[TemplateWidget->currentIndex()];
