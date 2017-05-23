@@ -245,10 +245,8 @@ mlMainWindow::mlMainWindow()
 	mTreyarchTheme = Settings.value("UseDarkTheme", false).toBool();
 
 	// Qt prefers '/' over '\\'
-	mGamePath = QDir::fromNativeSeparators(getenv("TA_GAME_PATH"));
-	mGamePath.chop(1);
-	mToolsPath = QDir::fromNativeSeparators(getenv("TA_TOOLS_PATH"));
-	mToolsPath.chop(1);
+	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
+	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
 
 	UpdateTheme();
 
@@ -841,10 +839,10 @@ void mlMainWindow::OnEditBuild()
 				else
 					Args << "-navmesh" << "-navvolume";
 
-				Args << "-loadFrom" << QString("%1/map_source/%2/%3.map").arg(mGamePath, MapName.left(2), MapName);
-				Args << QString("%1/share/raw/maps/%2/%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
+				Args << "-loadFrom" << QString("%1\\map_source\\%2\\%3.map").arg(mGamePath, MapName.left(2), MapName);
+				Args << QString("%1\\share\\raw\\maps\\%2\\%3.d3dbsp").arg(mGamePath, MapName.left(2), MapName);
 
-				Commands.append(QPair<QString, QStringList>(QString("%1/bin/cod2map64.exe").arg(mToolsPath), Args));
+				Commands.append(QPair<QString, QStringList>(QString("%1\\bin\\cod2map64.exe").arg(mToolsPath), Args));
 			}
 
 			if (mLightEnabledWidget->isChecked())
