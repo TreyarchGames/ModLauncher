@@ -109,6 +109,7 @@ protected slots:
 	void OnOpenZoneFile();
 	void OnOpenModRootFolder();
 	void OnRunMapOrMod();
+	void OnSaveLog() const;
 	void OnCleanXPaks();
 	void OnDelete();
 	void OnExport2BinChooseDirectory();
@@ -150,6 +151,7 @@ protected:
 
 	QPushButton* mBuildButton;
 	QPushButton* mDvarsButton;
+	QPushButton* mLogButton;
 	QCheckBox* mCompileEnabledWidget;
 	QComboBox* mCompileModeWidget;
 	QCheckBox* mLightEnabledWidget;
