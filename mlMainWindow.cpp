@@ -984,7 +984,7 @@ void mlMainWindow::OnEditPublish()
 		QJsonDocument Document = QJsonDocument::fromJson(File.readAll());
 		QJsonObject Root = Document.object();
 
-		mFileId = Root["PublisherID"].toString().toInt();
+		mFileId = Root["PublisherID"].toString().toULongLong();
 		mTitle = Root["Title"].toString();
 		mDescription = Root["Description"].toString();
 		mThumbnail = Root["Thumbnail"].toString();
