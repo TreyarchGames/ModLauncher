@@ -338,6 +338,7 @@ mlMainWindow::mlMainWindow()
 	ActionsLayout->addStretch(1);
 
 	mOutputWidget = new QPlainTextEdit(this);
+	mOutputWidget->setReadOnly(true);
 	CentralWidget->addWidget(mOutputWidget);
 
 	setCentralWidget(CentralWidget);
@@ -1318,26 +1319,59 @@ void mlMainWindow::UpdateWorkshopItem()
 
 	SteamUGC()->SetItemTags(UpdateHandle, &Tags);
 
-	 SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
-	 mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
+	SteamAPICall_t SteamAPICall = SteamUGC()->SubmitItemUpdate(UpdateHandle, "");
+	mSteamCallResultUpdateItem.Set(SteamAPICall, this, &mlMainWindow::OnUpdateItemResult);
 
-	 QProgressDialog Dialog(this);
-	 Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
-	 Dialog.setCancelButton(NULL);
-	 Dialog.setWindowModality(Qt::WindowModal);
-	 Dialog.show();
+	QProgressDialog Dialog(this);
+	Dialog.setLabelText(QString("Uploading workshop item '%1'...").arg(QString::number(mFileId)));
+	Dialog.setCancelButton(NULL);
+	Dialog.setWindowModality(Qt::WindowModal);
+	Dialog.show();
 
-	 for (;;)
-	 {
-		 uint64 Processed, Total;
-		 if (SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total) == k_EItemUpdateStatusInvalid)
-			 break;
+	for (;;)
+	{
+		uint64 Processed, Total;
 
-		 Dialog.setMaximum(Total);
-		 Dialog.setValue(Processed);
-		 QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-		 Sleep(100);
-	 }
+		const auto Status = SteamUGC()->GetItemUpdateProgress(SteamAPICall, &Processed, &Total);
+		// if we get an invalid status exit out, it could mean we're finished or there's an actual problem
+		if (Status == k_EItemUpdateStatusInvalid)
+		{
+			break;
+		}
+
+		switch (Status)
+		{
+		case EItemUpdateStatus::k_EItemUpdateStatusInvalid:
+			Dialog.setLabelText(
+				QString("Uploading workshop item '%1': %2").arg(QString::number(mFileId), QString("Invalid" )));
+			break;
+		case EItemUpdateStatus::k_EItemUpdateStatusPreparingConfig:
+			Dialog.setLabelText(
+				QString("Uploading workshop item '%1': %2").arg(QString::number(mFileId), QString("Preparing Config")));
+			break;
+		case EItemUpdateStatus::k_EItemUpdateStatusPreparingContent:
+			Dialog.setLabelText(
+				QString("Uploading workshop item '%1': %2").arg(QString::number(mFileId), QString("Preparing Content")));
+			break;
+		case EItemUpdateStatus::k_EItemUpdateStatusUploadingContent:
+			Dialog.setLabelText(
+				QString("Uploading workshop item '%1': %2").arg(QString::number(mFileId), QString("Uploading Content")));
+			break;
+		case EItemUpdateStatus::k_EItemUpdateStatusUploadingPreviewFile:
+			Dialog.setLabelText(
+				QString("Uploading workshop item '%1': %2").arg(QString::number(mFileId), QString("Uploading Preview file")));
+			break;
+		case EItemUpdateStatus::k_EItemUpdateStatusCommittingChanges:
+			Dialog.setLabelText(
+				QString("Uploading workshop item '%1': %2").arg(QString::number(mFileId), QString("Committing Changes")));
+			break;
+		}
+
+		Dialog.setMaximum(Total);
+		Dialog.setValue(Processed);
+		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		Sleep(100);
+	}
 }
 
 void mlMainWindow::OnCreateItemResult(CreateItemResult_t* CreateItemResult, bool IOFailure)
@@ -1350,7 +1384,7 @@ void mlMainWindow::OnCreateItemResult(CreateItemResult_t* CreateItemResult, bool
 
 	if (CreateItemResult->m_eResult != k_EResultOK)
 	{
-		QMessageBox::warning(this, "Error", "Error creating Steam Workshop item. Error code: " + CreateItemResult->m_eResult);
+		QMessageBox::warning(this, "Error", QString("Error creating Steam Workshop item. Error code: %1\nVisit https://steamerrors.com/ for more information.").arg(CreateItemResult->m_eResult));
 		return;
 	}
 
@@ -1369,7 +1403,7 @@ void mlMainWindow::OnUpdateItemResult(SubmitItemUpdateResult_t* UpdateItemResult
 
 	if (UpdateItemResult->m_eResult != k_EResultOK)
 	{
-		QMessageBox::warning(this, "Error", "Error updating Steam Workshop item. Error code: " + UpdateItemResult->m_eResult);
+		QMessageBox::warning(this, "Error", QString("Error updating Steam Workshop item. Error code: %1\nVisit https://steamerrors.com/ for more information.").arg(UpdateItemResult->m_eResult));
 		return;
 	}
 
