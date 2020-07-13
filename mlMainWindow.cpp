@@ -17,8 +17,13 @@
 */
 
 #include "stdafx.h"
+
 #include "mlMainWindow.h"
+
 #include <functional>
+#include <iomanip>
+#include <sstream>
+#include <utility>
 
 #pragma comment(lib, "steam_api64.lib")
 
@@ -322,6 +327,10 @@ mlMainWindow::mlMainWindow()
 	mDvarsButton = new QPushButton("Dvars");
 	connect(mDvarsButton, SIGNAL(clicked()), this, SLOT(OnEditDvars()));
 	ActionsLayout->addWidget(mDvarsButton);
+
+	mLogButton = new QPushButton("Save Log");
+	connect(mLogButton, SIGNAL(clicked()), this, SLOT(OnSaveLog()));
+	ActionsLayout->addWidget(mLogButton);
 
 	mIgnoreErrorsWidget = new QCheckBox("Ignore Errors");
 	ActionsLayout->addWidget(mIgnoreErrorsWidget);
@@ -1448,6 +1457,40 @@ void mlMainWindow::OnRunMapOrMod()
 	QList<QPair<QString, QStringList>> Commands;
 	Commands.append(QPair<QString, QStringList>(QString("%1/BlackOps3.exe").arg(mGamePath), Args));
 	StartBuildThread(Commands);
+}
+
+void mlMainWindow::OnSaveLog() const
+{
+	// want to make a logs directory for easy management of launcher logs (exe_dir/logs)
+	const auto dir = QDir{};
+	if (!dir.exists("logs"))
+	{
+		const auto result = dir.mkdir("logs");
+		if (!result)
+		{
+			QMessageBox::warning(nullptr, "Error", QString("Could not create the \"logs\" directory"));
+			return;
+		}
+	}
+
+	const auto time = std::time(nullptr);
+	auto ss = std::stringstream{};
+	const auto timeStr = std::put_time(std::localtime(&time), "%F_%T");
+
+	ss << timeStr;
+
+	auto dateStr = ss.str();
+	std::replace(dateStr.begin(), dateStr.end(), ':', '_');
+
+	QFile log(QString{ "logs/modlog_%1.txt" }.arg(dateStr.c_str()));
+
+	if (!log.open(QIODevice::WriteOnly))
+		return;
+
+	QTextStream stream(&log);
+	stream << mOutputWidget->toPlainText();
+
+	QMessageBox::information(nullptr, QString("Save Log"), QString("The console log has been saved to %1").arg(log.fileName()));
 }
 
 void mlMainWindow::OnCleanXPaks()
